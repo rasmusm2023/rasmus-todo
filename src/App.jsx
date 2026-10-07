@@ -9,7 +9,15 @@ function randomTilt() {
   return Math.round((Math.random() * 4 - 2) * 10) / 10; // -2.0 to 2.0 degrees
 }
 
-function Note({ note, onChange, onDelete, onFocus }) {
+function Note({
+  note,
+  onChange,
+  onDelete,
+  onFocus,
+  onDragMove,
+  onDragEnd,
+  overTrash,
+}) {
   const [newTitle, setNewTitle] = useState("");
   const [dragging, setDragging] = useState(false);
   const drag = useRef(null);
@@ -45,11 +53,21 @@ function Note({ note, onChange, onDelete, onFocus }) {
       x: Math.min(Math.max(x, 0), window.innerWidth - 80),
       y: Math.min(Math.max(y, 0), window.innerHeight - 60),
     });
+    onDragMove(e);
   }
 
-  function handlePointerUp() {
+  function handlePointerUp(e) {
+    if (!drag.current) return;
     drag.current = null;
     setDragging(false);
+    onDragEnd(e); // the desk decides if the note was dropped on the trash
+  }
+
+  function handlePointerCancel() {
+    // The browser took over the gesture (e.g. a system swipe): never delete
+    drag.current = null;
+    setDragging(false);
+    onDragEnd(null);
   }
 
   /* ---------- todos ---------- */
@@ -86,16 +104,13 @@ function Note({ note, onChange, onDelete, onFocus }) {
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
     >
       <section
         className={`paper group/note relative rounded-md border border-amber-900/10 pt-10 pb-8 pr-5 shadow-[0_12px_30px_rgba(80,60,30,0.25)] ${
           dragging ? "is-dragging cursor-grabbing" : "cursor-grab"
-        }`}
-        style={{
-          "--tilt": `${note.tilt}deg`,
-          transform: `rotate(${note.tilt}deg)`,
-        }}
+        } ${dragging && overTrash ? "over-trash" : ""}`}
+        style={{ "--tilt": `${note.tilt}deg` }}
         aria-label={`Note: ${note.title}`}
       >
         {/* tape */}
@@ -151,7 +166,7 @@ function Note({ note, onChange, onDelete, onFocus }) {
                   )}
                 </span>
                 {/* line-height = ruled line height, so wrapped lines sit on the paper lines */}
-                <span className="min-w-0 break-words text-lg font-bold leading-10 text-slate-700">
+                <span className="min-w-0 wrap-break-word text-lg font-bold leading-10 text-slate-700">
                   <span className={`strike ${todo.done ? "is-done" : ""}`}>
                     {todo.title}
                   </span>
@@ -193,6 +208,8 @@ function Note({ note, onChange, onDelete, onFocus }) {
 
 function App() {
   const topZ = useRef(1);
+  const trashRef = useRef(null);
+  const [overTrash, setOverTrash] = useState(false);
   const [notes, setNotes] = useState([
     {
       id: 1,
@@ -243,6 +260,25 @@ function App() {
     setNotes((prev) => prev.filter((n) => n.id !== id));
   }
 
+  // Hit-test with the pointer (not the note's edges): where your cursor is
+  // is what you're aiming at. A little padding makes the target forgiving.
+  function pointerOverTrash(e) {
+    const rect = trashRef.current?.getBoundingClientRect();
+    if (!rect || !e) return false;
+    const pad = 16;
+    return (
+      e.clientX >= rect.left - pad &&
+      e.clientX <= rect.right + pad &&
+      e.clientY >= rect.top - pad &&
+      e.clientY <= rect.bottom + pad
+    );
+  }
+
+  function handleDragEnd(id, e) {
+    if (pointerOverTrash(e)) deleteNote(id);
+    setOverTrash(false);
+  }
+
   function handleDeskClick(e) {
     // Only clicks on the bare desk create a note, not clicks that land on a note
     if (e.target !== e.currentTarget) return;
@@ -261,13 +297,47 @@ function App() {
         </p>
       )}
 
+      {/* Trash: sits under the notes (z-0), so a note slides in front of it */}
+      <div
+        ref={trashRef}
+        role="img"
+        aria-label="Trash. Drag a note here to delete it."
+        className={`p-16 trash absolute bottom-4 left-4 z-0 flex cursor-default select-none flex-col items-center ${
+          overTrash ? "is-over text-red-500" : "text-slate-500/80"
+        }`}
+      >
+        <svg viewBox="0 0 64 72" className="h-20 w-auto" aria-hidden="true">
+          <g className="trash-lid" fill="currentColor">
+            <rect x="24" y="4" width="16" height="7" rx="3" />
+            <rect x="6" y="11" width="52" height="7" rx="3.5" />
+          </g>
+          <path
+            d="M13 22h38l-3 43a5 5 0 0 1-5 4.6H21a5 5 0 0 1-5-4.6z"
+            fill="currentColor"
+          />
+          <path
+            d="M26 30v30M32 30v30M38 30v30"
+            stroke="#fffdf6"
+            strokeOpacity="0.65"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+        </svg>
+        <span className="font-['Caveat',cursive] text-2xl font-bold leading-none">
+          Trash
+        </span>
+      </div>
+
       {notes.map((note) => (
         <Note
           key={note.id}
           note={note}
+          overTrash={overTrash}
           onChange={(patch) => updateNote(note.id, patch)}
           onDelete={() => deleteNote(note.id)}
           onFocus={() => bringToFront(note.id)}
+          onDragMove={(e) => setOverTrash(pointerOverTrash(e))}
+          onDragEnd={(e) => handleDragEnd(note.id, e)}
         />
       ))}
 
@@ -278,7 +348,7 @@ function App() {
           e.stopPropagation();
           addNote(window.innerWidth / 2, window.innerHeight / 3);
         }}
-        className="absolute bottom-4 right-4 z-[9999] cursor-pointer rounded-full bg-slate-700 px-4 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+        className="absolute bottom-4 right-4 z-9999 cursor-pointer rounded-full bg-slate-700 px-4 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
       >
         + New note
       </button>

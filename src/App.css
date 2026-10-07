@@ -65,13 +65,38 @@
 
 /* A picked-up note lifts off the desk */
 .paper {
+  transform: rotate(var(--tilt, 0deg));
   transition:
     box-shadow 150ms ease,
-    transform 150ms ease;
+    transform 150ms ease,
+    opacity 150ms ease;
 }
 .paper.is-dragging {
   box-shadow: 0 22px 40px rgba(80, 60, 30, 0.35);
   transform: rotate(var(--tilt)) scale(1.02);
+}
+
+/* Held over the trash: the note shrinks and fades, "about to be dropped in" */
+.paper.is-dragging.over-trash {
+  transform: rotate(var(--tilt)) scale(0.8);
+  opacity: 0.7;
+}
+
+/* Trash can: lid tips open while a note is held over it */
+.trash {
+  transition:
+    color 150ms ease,
+    transform 150ms ease;
+}
+.trash.is-over {
+  transform: scale(1.12);
+}
+.trash-lid {
+  transform-origin: 8px 15px;
+  transition: transform 200ms ease;
+}
+.trash.is-over .trash-lid {
+  transform: rotate(-24deg);
 }
 
 @keyframes pop-in {
@@ -110,7 +135,9 @@
     animation: none;
   }
   .strike,
-  .paper {
+  .paper,
+  .trash,
+  .trash-lid {
     transition: none;
   }
 }
