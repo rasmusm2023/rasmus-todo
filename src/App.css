@@ -1,1 +1,113 @@
 @import "tailwindcss";
+
+/* Keep your Tailwind import at the top of this file, e.g. @import "tailwindcss"; */
+
+/* Desk: the plus cursor tells people they can drop a note here */
+.desk {
+  background-color: #e9dcc7;
+  background-image: radial-gradient(#d9c9ae 1px, transparent 1px);
+  background-size: 18px 18px;
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 4v16M4 12h16' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M12 4v16M4 12h16' stroke='%23334155' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E")
+      12 12,
+    copy;
+}
+
+/* Ruled paper: red margin line + blue lines every 2.5rem */
+.paper {
+  background-color: #fffdf6;
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 3.4rem,
+      #f2a0a0 3.4rem,
+      #f2a0a0 3.5rem,
+      transparent 3.5rem
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 2.45rem,
+      #cfe2ee 2.45rem,
+      #cfe2ee 2.5rem
+    );
+}
+
+/* Pen-stroke strikethrough that draws itself */
+.strike {
+  background: linear-gradient(#e0565b, #e0565b) no-repeat left 55% / 0% 2px;
+  transition:
+    background-size 300ms ease,
+    color 300ms ease;
+}
+.strike.is-done {
+  background-size: 100% 2px;
+  color: #8a8578;
+}
+
+/* A note lands on the desk */
+@keyframes note-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.note-in {
+  animation: note-in 220ms ease-out;
+}
+
+/* A picked-up note lifts off the desk */
+.paper {
+  transition:
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+.paper.is-dragging {
+  box-shadow: 0 22px 40px rgba(80, 60, 30, 0.35);
+  transform: rotate(var(--tilt)) scale(1.02);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pop-in {
+  animation: pop-in 250ms ease-out;
+}
+
+@keyframes check-pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.check-pop {
+  animation: check-pop 250ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note-in,
+  .pop-in,
+  .check-pop {
+    animation: none;
+  }
+  .strike,
+  .paper {
+    transition: none;
+  }
+}
