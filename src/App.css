@@ -39,6 +39,9 @@
   transition:
     background-size 300ms ease,
     color 300ms ease;
+  /* Each wrapped line of a long task gets its own pen stroke */
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 .strike.is-done {
   background-size: 100% 2px;

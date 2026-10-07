@@ -1,7 +1,9 @@
 import { useRef, useState } from "react";
 import "./App.css";
 
-const NOTE_WIDTH = 320;
+// Nominal width (26rem) used to center a new note on the click.
+// The real width is set by the content, see the style on the note wrapper.
+const NOTE_WIDTH = 416;
 
 function randomTilt() {
   return Math.round((Math.random() * 4 - 2) * 10) / 10; // -2.0 to 2.0 degrees
@@ -72,7 +74,15 @@ function Note({ note, onChange, onDelete, onFocus }) {
   return (
     <div
       className="note-in absolute touch-none select-none"
-      style={{ left: note.x, top: note.y, width: NOTE_WIDTH, zIndex: note.z }}
+      style={{
+        left: note.x,
+        top: note.y,
+        zIndex: note.z,
+        // Grows with the longest task, from 26rem up to 48rem (or the screen)
+        width: "max-content",
+        minWidth: "26rem",
+        maxWidth: "min(48rem, calc(100vw - 2rem))",
+      }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -120,16 +130,17 @@ function Note({ note, onChange, onDelete, onFocus }) {
           {todos.map((todo) => (
             <li
               key={todo.id}
-              className="pop-in group flex h-10 items-center pl-6 pr-1 transition-transform duration-150 hover:translate-x-1"
+              className="pop-in group flex min-h-10 items-start pl-6 pr-1 transition-transform duration-150 hover:translate-x-1"
             >
               <button
                 type="button"
                 onClick={() => handleToggleDone(todo.id)}
                 aria-pressed={todo.done}
-                className="flex h-full min-w-0 flex-1 cursor-pointer items-center gap-4 rounded text-left focus-visible:outline-2 focus-visible:outline-sky-500"
+                className="flex min-w-0 flex-1 cursor-pointer items-start gap-4 rounded text-left focus-visible:outline-2 focus-visible:outline-sky-500"
               >
+                {/* mt-2 centers the 1.5rem circle on the first 2.5rem ruled line */}
                 <span
-                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors ${
+                  className={`mt-2 grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors ${
                     todo.done
                       ? "border-emerald-500 bg-emerald-500 text-white"
                       : "border-slate-400 group-hover:border-sky-500"
@@ -139,10 +150,11 @@ function Note({ note, onChange, onDelete, onFocus }) {
                     <span className="check-pop text-sm leading-none">✓</span>
                   )}
                 </span>
-                <span
-                  className={`strike truncate text-lg font-bold text-slate-700 ${todo.done ? "is-done" : ""}`}
-                >
-                  {todo.title}
+                {/* line-height = ruled line height, so wrapped lines sit on the paper lines */}
+                <span className="min-w-0 break-words text-lg font-bold leading-10 text-slate-700">
+                  <span className={`strike ${todo.done ? "is-done" : ""}`}>
+                    {todo.title}
+                  </span>
                 </span>
               </button>
 
@@ -150,7 +162,7 @@ function Note({ note, onChange, onDelete, onFocus }) {
                 type="button"
                 onClick={() => handleDeleteTodo(todo.id)}
                 aria-label={`Delete ${todo.title}`}
-                className="cursor-pointer px-2 text-slate-400 opacity-0 transition hover:text-red-500 focus-visible:opacity-100 group-hover:opacity-100"
+                className="h-10 cursor-pointer px-2 text-slate-400 opacity-0 transition hover:text-red-500 focus-visible:opacity-100 group-hover:opacity-100"
               >
                 ✕
               </button>
@@ -266,7 +278,7 @@ function App() {
           e.stopPropagation();
           addNote(window.innerWidth / 2, window.innerHeight / 3);
         }}
-        className="absolute bottom-4 right-4 z-9999 cursor-pointer rounded-full bg-slate-700 px-4 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+        className="absolute bottom-4 right-4 z-[9999] cursor-pointer rounded-full bg-slate-700 px-4 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
       >
         + New note
       </button>
